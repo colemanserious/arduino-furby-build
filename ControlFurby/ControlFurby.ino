@@ -41,6 +41,9 @@ const unsigned int runFurbyPin = 5;
 unsigned int tummyResult;
 unsigned int loopCounter = 0;
 
+bool furbyRunning = false;
+unsigned long furbyEndTime; 
+
 // the setup routine runs once when you press reset:
 void setup() {                
   // initialize the digital pin as an output.
@@ -79,6 +82,7 @@ void loop() {
   // Serial.println("Tummy value: ");
   // Serial.println(tummyResult);
 
+  checkFurbyState();
   runResult = queryJenkins();
   Serial.print("Result from Jenkins: ");
   Serial.println(runResult);
@@ -176,15 +180,26 @@ void furbyCheer() {
   runFurby(5);
 }
 
-void runFurby (int seconds) {
-  digitalWrite(runFurbyPin, HIGH);
-  delay(seconds * 10000);
-  digitalWrite(runFurbyPin, LOW);  
-}
-
 void furbyRaspberry(int failCount) { 
   Serial.print("Boo"); 
   Serial.println(failCount);
 
   runFurby(failCount * 10);
+}
+
+// Start running, if not already, and set time interval out for turning it off
+void runFurby (int seconds) {
+  if (furbyRunning) return;
+  furbyRunning = true;
+  furbyEndTime = millis() + (1000*seconds);
+  digitalWrite(runFurbyPin, HIGH);
+}
+
+// is it time to turn it off?
+void checkFurbyState() {
+  if (millis() > furbyEndTime) {
+    furbyEndTime = 0;
+    digitalWrite(runFurbyPin, LOW);
+    furbyRunning=false;
+  }
 }
