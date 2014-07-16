@@ -3,20 +3,17 @@
   ControlFurby
 
   Poll information from Jenkins server, update Furby reaction accordingly
-    
-  Inspired by:
-  http://arduino.cc/en/Tutroial/WebClient
- */
+  See README.MD
+*/
 #include <SPI.h>
 #include <Ethernet.h>
 #include <aJSON.h>
 #include <MemoryFree.h>
 #include <Jenkins.h>
 
-
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xED };
 // we are avoiding using DNS for the moment
-//IPAddress ip(192,168,0,166);  // set up a static IP for this device
+//byte ip[] = {192, 168, 0, 166};
 
 // where are we running Jenkins from?
 //IPAddress jenkinsServer(127,0,0,1);
@@ -33,13 +30,9 @@ String prevRunId;
 int badResultCount = 0;
 
 EthernetClient client;
+EthernetServer server = EthernetServer(80);
 
-const unsigned int ledPin = 11;   // pin 13 typically has an LED, but we can use others
-const unsigned int tummyPin = 9;
-const unsigned int unknownPin = 3;
 const unsigned int runFurbyPin = 5;
-unsigned int tummyResult;
-unsigned int loopCounter = 0;
 
 bool furbyRunning = false;
 unsigned long furbyEndTime; 
@@ -47,8 +40,6 @@ unsigned long furbyEndTime;
 // the setup routine runs once when you press reset:
 void setup() {                
   // initialize the digital pin as an output.
-  // pinMode(ledPin, OUTPUT);     
-  // pinMode(tummyPin, INPUT);
   pinMode(runFurbyPin, OUTPUT);
   
   Serial.begin(9600);
@@ -60,34 +51,27 @@ void setup() {
  
   // start the Ethernet connection
   Ethernet.begin(mac);
-
   Serial.println(Ethernet.localIP());
-  
+
+  server.begin();   // start listening for notifications
+
   // give the ethernet time to initialize
   delay(1000);
-  
-  //digitalWrite(ledPin, HIGH);    
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
 
-  // tummyResult = digitalRead(tummyPin);
-  // if (loopCounter < 255) {
-  //   loopCounter++;
-  // } else { loopCounter = 0; }
-  // analogWrite(unknownPin, loopCounter);
-  // digitalWrite(unknownBrotherPin, HIGH);
-  // digitalWrite(ledPin, tummyResult);
-  // Serial.println("Tummy value: ");
-  // Serial.println(tummyResult);
-
   checkFurbyState();
-  runResult = queryJenkins();
-  Serial.print("Result from Jenkins: ");
-  Serial.println(runResult);
-  handleResult(runResult);
-   
+  //runResult = queryJenkins();
+
+  runResult = calledByJenkins();
+
+  if (runResult != unknown) {
+    Serial.print("Result from Jenkins: ");
+    Serial.println(runResult);
+    handleResult(runResult);
+  }   
 }
 
 /**
@@ -111,7 +95,57 @@ jenkins_result_enum queryJenkins() {
     delay(1);
   }
 
-  char json[60];
+  char json[200];
+  readResult(client, json);
+  
+  String resultString = parseJson(json, "result");
+  
+  Serial.println(getFreeMemory());
+  while (client.connected()) {
+    delay(5);
+  }
+  
+  client.stop();
+
+  return convertResultValue(resultString); 
+}
+
+jenkins_result_enum calledByJenkins() {
+    // if an incoming client connects, there will be bytes available to read:
+  EthernetClient client = server.available();
+  if (client == true) {
+    char json[200];
+    readResult(client, json);
+    String resultString = parseJson(json, "status");
+    return convertResultValue(resultString); 
+  }
+  return unknown;
+}
+
+String parseJson(char json[], char fieldToCheck[]) {
+
+  aJsonObject* jsonObject = aJson.parse(json);
+  Serial.println("Parsed jsonObject");
+  aJsonObject*  jenkinsResult= aJson.getObjectItem(jsonObject, fieldToCheck);
+  String resultString = jenkinsResult->valuestring;
+  Serial.print("Result:" );
+  Serial.println(resultString);
+
+  aJson.deleteItem(jsonObject); // clean up memory
+  return resultString;
+}
+
+jenkins_result_enum convertResultValue(String resultString) {
+  // convert Result to return value
+  if (resultString.equals(SUCCESS)) return success;
+  if (resultString.equals(FAILURE)) return failure;
+  if (resultString.equals(ABORT)) return aborted;
+  if (resultString.equals(UNSTABLE)) return unstable;
+
+  return unknown;  
+}
+
+void readResult (EthernetClient client, char json[]) {
   char c;
   int letterCount = 0;
   boolean noJSONYet = true;
@@ -128,30 +162,6 @@ jenkins_result_enum queryJenkins() {
   }
   Serial.print("Received json: ");
   Serial.println(json);
-
-  aJsonObject* jsonObject = aJson.parse(json);
-  Serial.println("Parsed jsonObject");
-  aJsonObject*  jenkinsResult= aJson.getObjectItem(jsonObject, "result");
-  String resultString = jenkinsResult->valuestring;
-  Serial.print("Result:" );
-  Serial.println(resultString);
-
-  aJson.deleteItem(jsonObject); // clean up memory
-
-  Serial.println(getFreeMemory());
-  while (client.connected()) {
-    delay(5);
-  }
-  
-  client.stop();
-
-  // convert Result to return value
-  if (resultString.equals(SUCCESS)) return success;
-  if (resultString.equals(FAILURE)) return failure;
-  if (resultString.equals(ABORT)) return aborted;
-  if (resultString.equals(UNSTABLE)) return unstable;
-
-  return unknown;
 }
 
 void handleResult( jenkins_result_enum results) {
