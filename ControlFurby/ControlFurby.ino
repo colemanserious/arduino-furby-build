@@ -11,6 +11,7 @@
 #include <MemoryFree.h>
 #include <Jenkins.h>
 
+
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xED };
 // we are avoiding using DNS for the moment
 //byte ip[] = {192, 168, 0, 166};
@@ -30,7 +31,7 @@ String prevRunId;
 int badResultCount = 0;
 
 EthernetClient client;
-EthernetServer server = EthernetServer(80);
+//EthernetServer server = EthernetServer(80);
 
 const unsigned int runFurbyPin = 5;
 
@@ -40,7 +41,7 @@ unsigned long furbyEndTime;
 // the setup routine runs once when you press reset:
 void setup() {                
   // initialize the digital pin as an output.
-  pinMode(runFurbyPin, OUTPUT);
+  //pinMode(runFurbyPin, OUTPUT);
   
   Serial.begin(9600);
   Serial.println(F("Beginning startup"));
@@ -49,11 +50,13 @@ void setup() {
       ; // wait for serial port to connect.  Needed for Leonardo only
   }
  
+  Serial.println("Starting connectivity");
   // start the Ethernet connection
   Ethernet.begin(mac);
+  //Ethernet.begin(mac, ip);
   Serial.println(Ethernet.localIP());
 
-  server.begin();   // start listening for notifications
+  //server.begin();   // start listening for notifications
 
   // give the ethernet time to initialize
   delay(1000);
@@ -62,14 +65,13 @@ void setup() {
 // the loop routine runs over and over again forever:
 void loop() {
 
-  checkFurbyState();
-  //runResult = queryJenkins();
+  //checkFurbyState();
+  runResult = queryJenkins();
+  //runResult = calledByJenkins();
 
-  runResult = calledByJenkins();
-
+  Serial.print("Result from Jenkins: ");
+  Serial.println(runResult);
   if (runResult != unknown) {
-    Serial.print("Result from Jenkins: ");
-    Serial.println(runResult);
     handleResult(runResult);
   }   
 }
@@ -81,6 +83,7 @@ void loop() {
  */
 jenkins_result_enum queryJenkins() {
 
+  Serial.println("Querying jenkins");
   if (!client.connect(jenkinsServer, jenkinsPort)) {
     Serial.println(F("exception: unable to connect"));
     return unknown;
@@ -97,6 +100,7 @@ jenkins_result_enum queryJenkins() {
 
   char json[200];
   readResult(client, json);
+  Serial.println("Retrieved result");
   
   String resultString = parseJson(json, "result");
   
@@ -110,17 +114,17 @@ jenkins_result_enum queryJenkins() {
   return convertResultValue(resultString); 
 }
 
-jenkins_result_enum calledByJenkins() {
-    // if an incoming client connects, there will be bytes available to read:
-  EthernetClient client = server.available();
-  if (client == true) {
-    char json[200];
-    readResult(client, json);
-    String resultString = parseJson(json, "status");
-    return convertResultValue(resultString); 
-  }
-  return unknown;
-}
+// jenkins_result_enum calledByJenkins() {
+//   // if an incoming client connects, there will be bytes available to read:
+//   client = server.available();
+//   if (client == true) {
+//     char json[200];
+//     readResult(client, json);
+//     String resultString = parseJson(json, "status");
+//     return convertResultValue(resultString); 
+//   }
+//   return unknown;
+// }
 
 String parseJson(char json[], char fieldToCheck[]) {
 
@@ -148,6 +152,7 @@ jenkins_result_enum convertResultValue(String resultString) {
 void readResult (EthernetClient client, char json[]) {
   char c;
   int letterCount = 0;
+  Serial.println("Reading result");
   boolean noJSONYet = true;
   while (client.available()) {
     c= client.read();
@@ -207,7 +212,9 @@ void runFurby (int seconds) {
 
 // is it time to turn it off?
 void checkFurbyState() {
-  if (millis() > furbyEndTime) {
+  Serial.println("Checking Furby state");
+  if (furbyRunning && millis() > furbyEndTime) {
+    Serial.println("Turning Furby off");
     furbyEndTime = 0;
     digitalWrite(runFurbyPin, LOW);
     furbyRunning=false;
