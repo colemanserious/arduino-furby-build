@@ -22,6 +22,8 @@ This is a project info sheet for the MakeFurbyDoIt project shown at OSCON 2014.
 [aJSON](https://github.com/interactive-matter/aJson) - prefer its manner of pulling from a stream...
 [MemoryFree](https://github.com/sudar/MemoryFree) - keep track of free memory
 [Arduino F macro](http://www.baldengineer.com/blog/2013/11/20/arduino-f-macro/) - reduce memory used by strings
+[Ethernet]() - set up client and server
+[TMRpcm]() - used to play wav files from an SD card
 
 ## Development Environment ##
 [Stino Sublime Text Plugin](http://robot-will.github.io/Stino/)

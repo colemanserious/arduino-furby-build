@@ -5,12 +5,16 @@
   Poll information from Jenkins server, update Furby reaction accordingly
   See README.MD
 */
-#include <SPI.h>
 #include <Ethernet.h>
 #include <aJSON.h>
-#include <MemoryFree.h>
 #include <Jenkins.h>
 
+//#define RUNSOUND
+#if defined RUNSOUND
+  #include <_TMRpcm.h>
+#endif
+#include <SD.h>
+#include <SPI.h>
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xED };
 // we are avoiding using DNS for the moment
@@ -38,10 +42,19 @@ const unsigned int runFurbyPin = 5;
 bool furbyRunning = false;
 unsigned long furbyEndTime; 
 
+#if defined RUNSOUND
+  _TMRpcm tmrpcm;   // create an object for playing WAV files
+#endif
+const uint8_t SdChipSelect = 4;
+
 // the setup routine runs once when you press reset:
 void setup() {                
   // initialize the digital pin as an output.
   //pinMode(runFurbyPin, OUTPUT);
+
+  #if defined RUNSOUND
+    tmrpcm.speakerPin = 9; //11 on Mega, 9 on Uno, Nano, etc
+  #endif
   
   Serial.begin(9600);
   Serial.println(F("Beginning startup"));
@@ -50,14 +63,18 @@ void setup() {
       ; // wait for serial port to connect.  Needed for Leonardo only
   }
  
-  Serial.println("Starting connectivity");
+  //Serial.println("Starting connectivity");
   // start the Ethernet connection
   Ethernet.begin(mac);
   //Ethernet.begin(mac, ip);
-  Serial.println(Ethernet.localIP());
+  //Serial.println(Ethernet.localIP());
 
   //server.begin();   // start listening for notifications
 
+  if (!SD.begin(SdChipSelect )) {  // see if the card is present and can be initialized:
+       Serial.println("SD fail");  
+       return;   // don't do anything more if not
+  }
   // give the ethernet time to initialize
   delay(1000);
 }
@@ -69,8 +86,8 @@ void loop() {
   runResult = queryJenkins();
   //runResult = calledByJenkins();
 
-  Serial.print("Result from Jenkins: ");
-  Serial.println(runResult);
+  // Serial.print("Result from Jenkins: ");
+  // Serial.println(runResult);
   if (runResult != unknown) {
     handleResult(runResult);
   }   
@@ -86,6 +103,7 @@ jenkins_result_enum queryJenkins() {
   Serial.println("Querying jenkins");
   if (!client.connect(jenkinsServer, jenkinsPort)) {
     Serial.println(F("exception: unable to connect"));
+    // Serial.println("exception:: unable to connect");
     return unknown;
   }
 
@@ -100,11 +118,10 @@ jenkins_result_enum queryJenkins() {
 
   char json[200];
   readResult(client, json);
-  Serial.println("Retrieved result");
+  // Serial.println("Retrieved result");
   
   String resultString = parseJson(json, "result");
   
-  Serial.println(getFreeMemory());
   while (client.connected()) {
     delay(5);
   }
@@ -129,11 +146,11 @@ jenkins_result_enum queryJenkins() {
 String parseJson(char json[], char fieldToCheck[]) {
 
   aJsonObject* jsonObject = aJson.parse(json);
-  Serial.println("Parsed jsonObject");
+  //Serial.println("Parsed jsonObject");
   aJsonObject*  jenkinsResult= aJson.getObjectItem(jsonObject, fieldToCheck);
   String resultString = jenkinsResult->valuestring;
-  Serial.print("Result:" );
-  Serial.println(resultString);
+  // Serial.print("Result:" );
+  // Serial.println(resultString);
 
   aJson.deleteItem(jsonObject); // clean up memory
   return resultString;
@@ -191,30 +208,39 @@ void handleResult( jenkins_result_enum results) {
 }
 
 void furbyCheer() { 
-  Serial.println("Hurray!");
-  runFurby(5);
+  // Serial.println("Hurray!");
+  runFurby(5, true);
 }
 
 void furbyRaspberry(int failCount) { 
-  Serial.print("Boo"); 
-  Serial.println(failCount);
+  // Serial.print("Boo"); 
+  // Serial.println(failCount);
 
-  runFurby(failCount * 10);
+  runFurby(failCount * 10, false);
 }
 
 // Start running, if not already, and set time interval out for turning it off
-void runFurby (int seconds) {
+void runFurby (int seconds, bool isGoodReaction) {
   if (furbyRunning) return;
   furbyRunning = true;
   furbyEndTime = millis() + (1000*seconds);
   digitalWrite(runFurbyPin, HIGH);
+
+  Serial.println("Furby reaction: " + isGoodReaction);
+  #if defined RUNSOUND
+    if (isGoodReaction) {
+      tmrpcm.play("furbywheehee855.wav");
+    } else {
+      tmrpcm.play("furbyvomit884.wav");
+    }
+  #endif
 }
 
 // is it time to turn it off?
 void checkFurbyState() {
-  Serial.println("Checking Furby state");
+  // Serial.println("Checking Furby state");
   if (furbyRunning && millis() > furbyEndTime) {
-    Serial.println("Turning Furby off");
+    // Serial.println("Turning Furby off");
     furbyEndTime = 0;
     digitalWrite(runFurbyPin, LOW);
     furbyRunning=false;
