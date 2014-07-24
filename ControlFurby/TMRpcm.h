@@ -25,7 +25,7 @@ Usage adaption for ControlFurby:
 class TMRpcm
 {
  public:
- 	TMRpcm();
+ 	//TMRpcm();
  	//*** General Playback Functions and Vars ***
 	void play(char* filename);
 	void stopPlayback();

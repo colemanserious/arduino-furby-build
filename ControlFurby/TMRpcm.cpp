@@ -553,7 +553,7 @@ void TMRpcm::play(char* filename, unsigned long seekPoint){
 */
 #if defined (ENABLE_RECORDING)
 
-  ISR(TIMER1_COMPA_vect){
+/*  ISR(TIMER1_COMPA_vect){
 		if(buffEmpty[!whichBuff] == 0){
 	 		a = !whichBuff;
    			*TIMSK[tt] &= ~(_BV(OCIE1A));
@@ -563,6 +563,7 @@ void TMRpcm::play(char* filename, unsigned long seekPoint){
    			*TIMSK[tt] |= _BV(OCIE1A);
 		}
   }
+*/
 #endif
 
 #if !defined (USE_TIMER2) //Not using TIMER2
