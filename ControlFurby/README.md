@@ -1,8 +1,13 @@
-This is a project info sheet for the MakeFurbyDoIt project shown at OSCON 2014.
+This is a project info sheet for the MakeFurbyDoIt project first shown at OSCON 2014.
 
 ## System Concept ##
+Pretty version: see [presentation](www.haikudeck.com/p/g5Mnd9VVhn)
+
+Text version: 
+Use Arduino to pull build status information from Jenkins.  If build is broken, make Furby go nuts.
 
 ## Design ##
+TODO: Add schematics for Furby, speaker, and combination of shields.
 
 ## Improvements ##
 - Show means of authenticating to Jenkins
@@ -14,18 +19,18 @@ This is a project info sheet for the MakeFurbyDoIt project shown at OSCON 2014.
    - ...?
 
 ## Libraries ##
-[aJSON](https://github.com/interactive-matter/aJson) - 
-[MemoryFree](https://github.com/sudar/MemoryFree) - keep track of free memory
-[Arduino F macro](http://www.baldengineer.com/blog/2013/11/20/arduino-f-macro/) - reduce memory used by strings
-[Ethernet](arduino.cc/en/reference/ethernet) - set up client and server
-[TMRpcm](https://github.com/TMRh20/TMRpcm/) - used to play wav files from an SD card
-[ArduinoJson](https://github.com/bblanchon/ArduinoJson) - see his [blog post](http://blog.benoitblanchon.fr/arduino-json-parser/) on why he made the library
++ [aJSON](https://github.com/interactive-matter/aJson) - 
++ [MemoryFree](https://github.com/sudar/MemoryFree) - keep track of free memory
++ [Arduino F macro](http://www.baldengineer.com/blog/2013/11/20/arduino-f-macro/) - reduce memory used by strings
++ [Ethernet](arduino.cc/en/reference/ethernet) - set up client and server
++ [TMRpcm](https://github.com/TMRh20/TMRpcm/) - used to play wav files from an SD card
++ [ArduinoJson](https://github.com/bblanchon/ArduinoJson) - see his [blog post](http://blog.benoitblanchon.fr/arduino-json-parser/) on why he made the library
     * Note: if imported his library directly, go delete the JsonGeneratorTest and JsonParserTest folders, so not attempting to compile against CPPUnit
     * Opted to go with aJSON
 
 ## Development Environment ##
-[Stino Sublime Text Plugin](http://robot-will.github.io/Stino/)
-[Sublime Text editor](www.sublimetext.com)
++ [Stino Sublime Text Plugin](http://robot-will.github.io/Stino/)
++ [Sublime Text editor](www.sublimetext.com)
  
 ### Furby wiring notes ###
 - Speakers - brown wires, left side of furby, white speaker.  
