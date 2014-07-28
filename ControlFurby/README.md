@@ -1,7 +1,7 @@
 This is a project info sheet for the MakeFurbyDoIt project first shown at OSCON 2014.
 
 ## System Concept ##
-Pretty version: see [presentation](www.haikudeck.com/p/g5Mnd9VVhn)
+Pretty version: see [presentation](http://www.haikudeck.com/p/g5Mnd9VVhn)
 
 Text version: 
 Use Arduino to pull build status information from Jenkins.  If build is broken, make Furby go nuts.
